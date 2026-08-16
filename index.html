@@ -51,7 +51,8 @@
   th{font-size:10px; color:var(--muted); text-align:left; font-weight:700; padding:8px 8px; text-transform:uppercase; letter-spacing:1px; background:rgba(255,255,255,.03);}
   td{padding:5px 8px; vertical-align:middle;}
   .lanepill{width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; background:#0c1424; border:1px solid var(--line);}
-  .tierpill{width:30px; height:30px; display:flex; align-items:center; justify-content:center;}
+  td:first-child, thead th:first-child{padding-left:6px; padding-right:6px; overflow:visible;}
+  .tierpill{width:32px; height:32px; display:flex; align-items:center; justify-content:center; margin:0 auto;}
   .tierpill .tbadge{width:30px; height:30px; display:block; object-fit:contain; filter:drop-shadow(0 1px 2px rgba(0,0,0,.5));}
   input[type=text], input[type=number]{width:100%; background:#0c1424; border:1px solid var(--line); color:var(--text);
     padding:11px 10px; border-radius:8px; font-size:14px;}
@@ -237,7 +238,7 @@
     <table>
       <thead>
         <tr>
-          <th style="width:30px;"></th>
+          <th style="width:44px;"></th>
           <th>소환사명</th>
           <th style="width:96px;">이름</th>
           <th style="width:120px;">티어</th>
@@ -251,6 +252,7 @@
     <div class="actions">
       <button class="btn primary" id="makeBtn">팀 짜기</button>
       <button class="btn ghost" id="reshuffleBtn" style="display:none;">🎲 다시 섞기</button>
+      <button class="btn ghost sm admin-only" id="demoBtn" title="샘플 데이터로 채워서 결과를 미리 봐요 (명단 반영 안 함)">🎲 예시 채우기</button>
       <label class="autochk" title="체크 해제 시 이번 판만 반영(임시). 명단 반영 요청 안 보냄"><input type="checkbox" id="autoSyncChk"> 바뀐 티어/라인 명단에 반영 요청</label>
     </div>
 
@@ -752,6 +754,7 @@ function sameMember(a, b){
 }
 // 팀 짜기 시: 위 입력칸 중 명단과 다른(신규/변경) 사람만 "관리자 승인 요청"으로 전송
 function autoSyncRoster(){
+  if(window.__demoFill) return; // 예시 채우기로 만든 판은 명단에 반영 안 함
   const chk = document.getElementById('autoSyncChk');
   if(chk && !chk.checked) return; // 체크 해제 시 = 이번 판만(임시), 명단 반영 요청 안 함
   if(!fbPendingRef) return; // 오프라인/미연결이면 건너뜀
@@ -807,6 +810,27 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
   document.getElementById('reshuffleBtn').style.display='none';
   showErr(null);
   save();
+});
+
+// 예시 채우기: 현재 인원 수만큼 샘플로 채우고 결과까지 (명단 반영 안 함)
+document.getElementById('demoBtn').addEventListener('click', ()=>{
+  const tiers=['CHALLENGER','GRANDMASTER','MASTER','DIAMOND','EMERALD','PLATINUM','GOLD','SILVER','BRONZE','IRON'];
+  const rows=rowsEl.querySelectorAll('tr');
+  rows.forEach((tr,i)=>{
+    tr.querySelector('.f-name').value='예시'+(i+1);
+    tr.querySelector('.f-real').value='';
+    const t=tiers[(i*3+2)%tiers.length];
+    const ts=tr.querySelector('.f-tier'); ts.value=t;
+    tr.querySelector('.f-div').value=(i%4)+1;
+    tr.querySelector('.f-lp').value=(t==='MASTER'||t==='GRANDMASTER'||t==='CHALLENGER')?[150,500,900][i%3]:'';
+    tr.querySelector('.f-lane').value=LANES[i%5].key;
+    tr.querySelector('.f-lane2').value='';
+    onTierChange({target:ts});
+  });
+  save();
+  window.__demoFill=true;
+  document.getElementById('makeBtn').click();
+  window.__demoFill=false;
 });
 
 const sizeSeg = document.getElementById('sizeSeg');
